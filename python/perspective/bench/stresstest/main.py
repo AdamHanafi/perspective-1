@@ -5,6 +5,7 @@
 # This file is part of the Perspective library, distributed under the terms of
 # the Apache License 2.0.  The full license can be found in the LICENSE file.
 #
+import logging
 import os
 import sys
 
@@ -33,10 +34,10 @@ def run():
     client = PerspectiveWebSocketClient("ws://127.0.0.1:{}/".format(8888))
     yield client.connect()
     yield client.register_on_update()
-    yield client.start()
     yield client.run_forever()
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
     loop = tornado.ioloop.IOLoop.current()
     loop.add_callback(run)
     loop.start()
