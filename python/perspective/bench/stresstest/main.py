@@ -18,7 +18,7 @@ def get_free_port():
 @tornado.gen.coroutine
 def run():
     client = PerspectiveWebSocketClient("ws://127.0.0.1:{}/".format(8888))
-    yield client.run_until_timeout(timeout=5)
+    yield client.run_until_timeout()
 
 
 if __name__ == "__main__":
