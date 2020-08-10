@@ -5,11 +5,15 @@
 # This file is part of the Perspective library, distributed under the terms of
 # the Apache License 2.0.  The full license can be found in the LICENSE file.
 #
+import asyncio
 import six
+import signal
+import os
 import sys
 import random
 import logging
 import json
+import perspective
 
 from datetime import datetime, timedelta
 from tornado import gen, ioloop, websocket
@@ -109,15 +113,23 @@ class PerspectiveWebSocketClient(object):
                 if "to" in method:
                     # simulate grid paging - get 50 rows and at max 10 columns
                     # depending on the view construction.
-                    num_cols = len(self.view_config.get("columns", self.column_names))
                     start_row = random.randint(0, 500)
-                    start_col = random.randint(0, num_cols - 1)
+                    end_row = start_row + self.row_window
+
+                    num_cols = len(self.column_names)
+
+                    cols_in_config = self.view_config.get("columns", None)
+
+                    if cols_in_config:
+                        num_cols = len(cols_in_config)
+
+                    start_col = random.randint(0, num_cols - 1) if num_cols - 1 > 0 else 0
                     _end = start_col + self.column_window
                     end_col = _end if _end < num_cols else num_cols
 
                     args.append({
                         "start_row": start_row,
-                        "end_row": start_row + self.row_window,
+                        "end_row": end_row,
                         "start_col": start_col,
                         "end_col": end_col
                     })
@@ -373,19 +385,27 @@ class PerspectiveWebSocketClient(object):
                 if "to" in method:
                     # simulate grid paging - get 50 rows and at max 10 columns
                     # depending on the view construction.
-                    num_cols = len(self.view_config.get("columns", self.column_names))
                     start_row = random.randint(0, 500)
-                    start_col = random.randint(0, num_cols - 1)
+                    end_row = start_row + self.row_window
+
+                    num_cols = len(self.column_names)
+
+                    cols_in_config = self.view_config.get("columns", None)
+
+                    if cols_in_config:
+                        num_cols = len(cols_in_config)
+
+                    start_col = random.randint(0, num_cols - 1) if num_cols - 1 > 0 else 0
                     _end = start_col + self.column_window
                     end_col = _end if _end < num_cols else num_cols
 
                     args.append({
                         "start_row": start_row,
-                        "end_row": start_row + self.row_window,
+                        "end_row": end_row,
                         "start_col": start_col,
                         "end_col": end_col
                     })
-    
+
                 message = self._make_message(
                     cmd="view_method",
                     name=self.view_name,
@@ -443,3 +463,48 @@ class PerspectiveWebSocketClient(object):
         }
 
         return message
+
+
+if __name__ == "__main__":
+    # If this module is run through a subprocess, create its own instance of
+    # the results table and dump to arrow at the end.
+    logging.basicConfig(level=logging.DEBUG)
+    HERE = os.path.abspath(os.path.dirname(__file__))
+
+    RESULTS_SCHEMA = {
+        "client_id": str,
+        "cmd": str,
+        "method": str,
+        "args": str,
+        "send_timestamp": datetime,
+        "receive_timestamp": datetime,
+        "microseconds_on_wire": float,
+        "message_id": int,
+        "errored": bool
+    }
+
+    RESULTS_TABLE = perspective.Table(RESULTS_SCHEMA)
+    CLIENT_ID = sys.argv[1]
+
+    def dump_and_exit(sig, frame):
+        dt = "{:%Y%m%dT%H%M%S}".format(datetime.now())
+        filename = "results_{}_{}.arrow".format(CLIENT_ID, dt)
+        logging.critical("KeyboardInterrupt: dumping %s rows of results to %s", RESULTS_TABLE.size(), filename)
+
+        with open(os.path.join(HERE, "results", filename), "wb") as results_arrow:
+            results_arrow.write(RESULTS_TABLE.view().to_arrow())
+
+        logging.critical("Exiting")
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, dump_and_exit)
+
+    def run(client_id):
+        """Create a new client and run it forever on a new IOLoop."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        client = PerspectiveWebSocketClient("ws://127.0.0.1:{}/".format(8888), client_id, RESULTS_TABLE)
+        loop.run_until_complete(client.run_until_timeout())
+        loop.run_forever()
+
+    run(CLIENT_ID)
