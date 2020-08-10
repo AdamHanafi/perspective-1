@@ -27,8 +27,10 @@ RESULTS_SCHEMA = {
     "args": str,
     "send_timestamp": datetime,
     "receive_timestamp": datetime,
-    "time_on_wire": float,
-    "message_id": int
+    "microseconds_on_wire": float,
+    "message_id": int,
+    "errored": bool,
+    "wait_time": float
 }
 
 RESULTS_TABLE = perspective.Table(RESULTS_SCHEMA)
@@ -38,7 +40,7 @@ def dump_and_exit(sig, frame):
     filename = "results_{:%Y%m%dT%H%M%S}.arrow".format(datetime.now())
     logging.critical("KeyboardInterrupt: dumping %s rows of results to %s", RESULTS_TABLE.size(), filename)
 
-    with open(os.path.join(HERE, filename), "wb") as results_arrow:
+    with open(os.path.join(HERE, "results", filename), "wb") as results_arrow:
         results_arrow.write(RESULTS_TABLE.view().to_arrow())
 
     logging.critical("Exiting")
@@ -50,7 +52,6 @@ def get_free_port():
     return sockets[0].getsockname()[:2][1]
 
 
-@tornado.gen.coroutine
 def run(client_id):
     """Create a new client and run it forever on a new IOLoop."""
     loop = asyncio.new_event_loop()
@@ -64,7 +65,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, dump_and_exit)
     logging.basicConfig(level=logging.DEBUG)
     tornado.platform.asyncio.asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
-
+    run("client_0")
     # as num_clients increases, how does performance drop off?
     for i in range(6):
         t = threading.Thread(target=run, args=["client_{}".format(i)])

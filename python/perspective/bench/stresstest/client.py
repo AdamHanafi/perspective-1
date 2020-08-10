@@ -77,6 +77,8 @@ class PerspectiveWebSocketClient(object):
         self.columns_by_type = {}
         self.column_names = []
 
+        self.view_config = {}
+
     @gen.coroutine
     def connect(self):
         """Create and maintain a websocket client to Perspective, initializing
@@ -101,15 +103,17 @@ class PerspectiveWebSocketClient(object):
             cmd = "view_method" if random.random() > 0.5 else "table_method"
 
             if cmd == "view_method":
-                method = self.view_methods[self.view_method_iter]
+                method = random.choice(self.view_methods)
                 args = []
 
                 if "to" in method:
-                    # simulate grid paging
+                    # simulate grid paging - get 50 rows and at max 10 columns
+                    # depending on the view construction.
+                    num_cols = len(self.view_config.get("columns", self.column_names))
                     start_row = random.randint(0, 500)
-                    start_col = random.randint(0, len(self.column_names))
+                    start_col = random.randint(0, num_cols - 1)
                     _end = start_col + self.column_window
-                    end_col = _end if _end < len(self.column_names) else len(self.column_names)
+                    end_col = _end if _end < num_cols else num_cols
 
                     args.append({
                         "start_row": start_row,
@@ -117,11 +121,6 @@ class PerspectiveWebSocketClient(object):
                         "start_col": start_col,
                         "end_col": end_col
                     })
-
-                if self.view_method_iter < len(self.view_methods) - 1:
-                    self.view_method_iter += 1
-                else:
-                    self.view_method_iter = 0
 
                 message = self._make_message(
                     cmd=cmd,
@@ -135,14 +134,23 @@ class PerspectiveWebSocketClient(object):
                     name="table",
                     method=method)
 
-            logging.info("Sending %s: %s, id: %s", cmd, method, message["id"])
+            # TODO: reimplement wait properly
+            wait = False  # random.random() > 0.75
+            wait_time = None
+
+            if wait:
+                # make sure the message passes throgh a wait so we can handle
+                # it in the metadata end
+                wait_time = random.random()
+                message["_wait"] = wait_time
+
+            logging.info("%s Sending %s: %s, id: %s", self.client_id, cmd, method, message["id"])
             yield self.write_message(message)
 
-            # sort of simulate wait times between each message
-            # if random.random() > 0.75:
-            #     wait_time = random.random()
-            #     logging.info("Waiting for %s", wait_time)
-            #     yield gen.sleep(wait_time)
+            # perform the wait if needed
+            if wait:
+                logging.info("Waiting for %s", wait_time)
+                yield gen.sleep(wait_time)
 
     @gen.coroutine
     def run_until_timeout(self, timeout=None):
@@ -236,24 +244,24 @@ class PerspectiveWebSocketClient(object):
         try:
             response = self.parse_response(message)
             response_id = response["id"]
-            logging.info("Received id: %s", response_id)
+            logging.info("%s Received id: %s", self.client_id, response_id)
             meta = None
 
             if response_id in self.pending_messages:
                 meta = self.pending_messages[response_id]
+                meta["errored"] = "error" in response
                 meta["receive_timestamp"] = datetime.now()
-                meta["time_on_wire"] = (meta["receive_timestamp"] - meta["send_timestamp"]).microseconds
+                meta["microseconds_on_wire"] = (meta["receive_timestamp"] - meta["send_timestamp"]).microseconds
                 self.results_table.update([meta])
                 self.pending_messages.pop(response_id)
 
             if response_id in self.callbacks:
-                pass
-                # Call the on_update callback
-                # ioloop.IOLoop.current().add_callback(self.callbacks[response_id], self)
+                # Call back into the on_update callback
+                ioloop.IOLoop.current().add_callback(self.callbacks[response_id], self)
 
             assert "error" not in response
         except AssertionError:
-            logging.critical("Server returned error:", message)
+            logging.critical("Server returned error for %s: %s", self.client_id, message)
 
     @gen.coroutine
     def make_view(self):
@@ -296,6 +304,7 @@ class PerspectiveWebSocketClient(object):
         message = self._make_view_message(view_name, config)
         yield self.write_message(message)
         self.view_name = view_name
+        self.view_config = config
 
     @gen.coroutine
     def delete_view(self):
@@ -315,6 +324,7 @@ class PerspectiveWebSocketClient(object):
         self.message_id += 1
         logging.debug("Deleted view: %s", self.view_name)
         self.view_name = None
+        self.view_config = None
 
     @gen.coroutine
     def get_table_schema(self):
@@ -357,12 +367,30 @@ class PerspectiveWebSocketClient(object):
             # happens, with no sleep time to simulate the Viewer requesting
             # more information from the server.
             for i in range(5):
-                # non-mutating methods only
-                method = random.choice(("schema", "num_rows", "column_paths"))
+                method = random.choice(self.view_methods)
+                args = []
+
+                if "to" in method:
+                    # simulate grid paging - get 50 rows and at max 10 columns
+                    # depending on the view construction.
+                    num_cols = len(self.view_config.get("columns", self.column_names))
+                    start_row = random.randint(0, 500)
+                    start_col = random.randint(0, num_cols - 1)
+                    _end = start_col + self.column_window
+                    end_col = _end if _end < num_cols else num_cols
+
+                    args.append({
+                        "start_row": start_row,
+                        "end_row": start_row + self.row_window,
+                        "start_col": start_col,
+                        "end_col": end_col
+                    })
+    
                 message = self._make_message(
                     cmd="view_method",
                     name=self.view_name,
-                    method=method)
+                    method=method,
+                    args=args)
 
                 logging.info("Sending within on_update: %s, id: %s", method, message["id"])
                 yield self.write_message(message)
