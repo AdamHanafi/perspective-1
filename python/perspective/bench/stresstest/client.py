@@ -313,9 +313,6 @@ class PerspectiveWebSocketClient(object):
                 self.columns_by_type[dtype] = []
             self.columns_by_type[dtype].append(name)
 
-        logging.debug("Table schema: %s", self.schema)
-        logging.debug("Table columns by type: %s", self.columns_by_type)
-
     @gen.coroutine
     def register_on_update(self):
         """Registers an `on_update` callback that mimics the callback of the
