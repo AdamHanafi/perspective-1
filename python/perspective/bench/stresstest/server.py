@@ -12,9 +12,6 @@ import json
 import random
 import tornado
 import time
-
-
-sys.path.insert(1, os.path.join(os.path.dirname(__file__), "..", ".."))
 import perspective
 
 

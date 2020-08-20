@@ -92,6 +92,7 @@ class PerspectiveWebSocketClient(object):
         """Create and maintain a websocket client to Perspective, initializing
         the connection with the `init` message."""
         self.client = yield websocket.websocket_connect(self.url)
+        logging.info("%s Sending %s, id: %s", self.client_id, "init", self.message_id)
         yield self.write_message({"id": self.message_id, "cmd": "init"})
 
     @gen.coroutine
@@ -282,17 +283,17 @@ class PerspectiveWebSocketClient(object):
                 self.results_table.update([meta])
                 self.pending_messages.pop(response_id)
 
-            if self.test_type == "view" and response.get("binary"):
+            if self.test_type == "view" and response.get("method") != "to_arrow":
                 # View reads messages sent from on_update, which don't exist
                 # in the pending_messages map but need to be read anyway.
                 meta = {
                     "receive_timestamp": datetime.now(),
                     "client_id": self.client_id,
                     "cmd": "view_method",
-                    "method": "on_update_callback",
+                    "method": response.get("method", "on_update_callback"),
                     "message_id": response.get("id", None),
-                    "binary": response["binary"],
-                    "byte_length": response["byte_length"]
+                    "binary": response.get("binary"),
+                    "byte_length": response.get("byte_length")
                 }
 
                 if response.get("send_time"):
@@ -428,6 +429,8 @@ class PerspectiveWebSocketClient(object):
                 args=[{"mode": "row"}],
                 subscribe=True,
                 callback_id="callback_1")
+
+            logging.info("%s Sending %s: %s, id: %s", self.client_id, "view_method", "on_update", on_update_message["id"])
 
             yield self.write_message(on_update_message)
             return
