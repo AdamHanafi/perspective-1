@@ -194,8 +194,12 @@ class PerspectiveWidget(Widget, PerspectiveViewer):
         self._displayed = False
         self.on_displayed(self._on_display)
 
+        # Trigger special flow when receiving an ArrayBuffer/binary
+        self._is_transferable = False
+        self._is_transferable_pre_message = None
+
         # If `self.client` is True, the front-end `perspective-viewer` is given
-        # a copy of the data serialized to Arrow, and changes made in Python
+        # a copy of the data serialized to JSON, and changes made in Python
         # do not reflect to the front-end.
         self.client = client
 
@@ -351,7 +355,7 @@ class PerspectiveWidget(Widget, PerspectiveViewer):
         # Close the underlying comm and remove widget from the front-end
         self.close()
 
-    def post(self, msg, msg_id=None):
+    def post(self, msg, msg_id=None, binary=False):
         '''Post a serialized message to the `PerspectiveJupyterClient`
         in the front end.
 
@@ -363,9 +367,15 @@ class PerspectiveWidget(Widget, PerspectiveViewer):
                 viewer to process.
             msg_id (int): an integer id that allows the client to process
                 the message.
+            binary (bool): whether the message contains binary buffers that
+                should be sent with a special protocol.
         '''
-        message = _PerspectiveWidgetMessage(msg_id, "cmd", msg)
-        self.send(message.to_dict())
+        if binary:
+            # The front end will read `buffers` properly.
+            self.send(None, buffers=[msg])
+        else:
+            message = _PerspectiveWidgetMessage(msg_id, "cmd", msg)
+            self.send(message.to_dict())
 
     @observe("value")
     def handle_message(self, widget, content, buffers):
@@ -414,6 +424,10 @@ class PerspectiveWidget(Widget, PerspectiveViewer):
 
             if len(self._client_options.keys()) > 0:
                 msg_data["options"] = self._client_options
+        elif self._perspective_view_name is not None:
+            msg_data = {
+                "view_name": self._perspective_view_name
+            }
         elif self.table_name is not None:
             # Only pass back the table if it's been loaded. If the table isn't
             # loaded, the `load()` method will handle synchronizing the

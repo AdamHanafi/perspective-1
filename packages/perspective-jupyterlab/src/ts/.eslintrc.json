@@ -27,6 +27,8 @@
             "tabWidth": 4,
             "bracketSpacing": false
         }],
+        "camelcase": "off",
+        "@typescript-eslint/camelcase": "off",
         "no-const-assign": "error",
         "no-this-before-super": "error",
         "no-undef": "error",

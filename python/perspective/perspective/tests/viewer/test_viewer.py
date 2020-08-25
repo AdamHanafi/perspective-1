@@ -34,8 +34,6 @@ class TestViewer:
         table = Table({"a": [1, 2, 3]})
         viewer = PerspectiveViewer(filters=[["a", "==", 2]])
         viewer.load(table)
-        assert viewer.view_name is None
-        assert viewer.view is None
 
     def test_viewer_make_view_replace(self):
         table = Table({"a": [1, 2, 3]})
