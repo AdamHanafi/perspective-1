@@ -240,6 +240,7 @@ export class PerspectiveView extends DOMWidgetView {
         } else {
             let view_or_table;
 
+            // TODO: finalize the API for this in Python
             if (msg.data["view_name"]) {
                 // Get a remote view handle from the Jupyter kernel, and
                 // create a client-side table using the view handle.

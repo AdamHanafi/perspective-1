@@ -17,7 +17,8 @@ class Plugin(Enum):
         >>> widget = PerspectiveWidget(data, plugin=Plugin.TREEMAP)
     '''
     HYPERGRID = 'hypergrid'  # hypergrid
-    GRID = 'hypergrid'  # hypergrid
+    DATAGRID = 'datagrid'  # datagrid
+    GRID = 'datagrid'  # datagrid
 
     YBAR = 'y_bar'  # highcharts
     XBAR = 'x_bar'  # highcharts
