@@ -14,6 +14,7 @@ import {PERSPECTIVE_VERSION} from "./version";
  * TODO: document
  */
 export class PerspectiveModel extends DOMWidgetModel {
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     defaults() {
         return {
             ...super.defaults(),
@@ -24,7 +25,7 @@ export class PerspectiveModel extends DOMWidgetModel {
             _view_module: PerspectiveModel.view_module,
             _view_module_version: PerspectiveModel.view_module_version,
 
-            plugin: "hypergrid",
+            plugin: "datagrid",
             columns: [],
             row_pivots: [],
             column_pivots: [],

@@ -33,7 +33,7 @@ class PerspectiveViewer(PerspectiveTraitlets, object):
     }
 
     def __init__(self,
-                 plugin="hypergrid",
+                 plugin="datagrid",
                  columns=None,
                  row_pivots=None,
                  column_pivots=None,
@@ -245,25 +245,22 @@ class PerspectiveViewer(PerspectiveTraitlets, object):
         self.computed_columns = []
         self.aggregates = {}
         self.columns = []
-        self.plugin = "hypergrid"
+        self.plugin = "datagrid"
 
     def delete(self, delete_table=True):
         """Delete the Viewer's data and clears its internal state. If
-        ``delete_table`` is True, the underlying `perspective.Table` and all
-        associated ``View`` objects will be deleted.
+        ``delete_table`` is True, the underlying `perspective.Table` and the
+        internal `View` object will be deleted.
 
         Args:
             delete_table (:obj:`bool`) : whether the underlying `Table` will be
                 deleted. Defaults to True.
         """
-        if self._view:
-            self._view.delete()
-            self._perspective_view_name = None
-
-        for view in self.manager._views.values():
-            view.delete()
-
         if delete_table:
+            if self._view:
+                self._view.delete()
+                self._perspective_view_name = None
+
             self.table.delete()
             self.manager._tables.pop(self.table_name)
             self.table_name = None

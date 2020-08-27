@@ -180,7 +180,7 @@ export class PerspectiveWidget extends Widget {
      * @param {boolean} delete_table Whether `delete()` should be called on the
      * underlying `Table`.
      */
-    delete(delete_table = true) {
+    delete(delete_table = true): void {
         this.viewer.delete(delete_table || this.client);
     }
 
@@ -188,7 +188,7 @@ export class PerspectiveWidget extends Widget {
         return this.viewer.table;
     }
 
-    /******************************************************************************
+    /***************************************************************************
      *
      * Getters
      *
