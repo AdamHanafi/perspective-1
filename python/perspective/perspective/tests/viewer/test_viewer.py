@@ -8,6 +8,7 @@
 
 import numpy as np
 import pandas as pd
+from pytest import mark
 from perspective import PerspectiveViewer, Table
 
 
@@ -19,8 +20,9 @@ class TestViewer:
         viewer.load(table)
         assert viewer.table == table
 
-    # server-side view creation
+    # server-side view creation - skip for now until fully deprecated
 
+    @mark.skip
     def test_viewer_make_view(self):
         table = Table({"a": [1, 2, 3]})
         viewer = PerspectiveViewer(filters=[["a", "==", 2]])
@@ -30,11 +32,13 @@ class TestViewer:
             "a": [2]
         }
 
+    @mark.skip
     def test_viewer_make_view_none(self):
         table = Table({"a": [1, 2, 3]})
         viewer = PerspectiveViewer(filters=[["a", "==", 2]])
         viewer.load(table)
 
+    @mark.skip
     def test_viewer_make_view_replace(self):
         table = Table({"a": [1, 2, 3]})
         viewer = PerspectiveViewer(filters=[["a", "==", 2]])
