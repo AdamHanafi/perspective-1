@@ -43,6 +43,7 @@ class PerspectiveTornadoHandlerWithTelemetry(PerspectiveTornadoHandler):
                 if telemetry.get("method") != "on_update":
                     self._manager._pending_telemetry.pop(msg["id"])
 
+            # TODO: rename to server_send_time
             msg["send_time"] = time.time() * 100000
             super(PerspectiveTornadoHandlerWithTelemetry, self).post(json.dumps(msg, cls=DateTimeEncoder), binary)
         else:
