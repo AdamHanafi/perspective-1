@@ -294,7 +294,7 @@ class PerspectiveWebSocketClient(object):
                     # for view tests, there is one to_arrow and then the rest of
                     # the binary callbacks are from on_update, so we can
                     # automatically increment the internal tracker.
-                    self._on_update_callback_message_id += 1
+                    self._num_messages_logged += 1
 
                 # View reads messages sent from on_update, which don't exist
                 # in the pending_messages map but need to be read anyway.
@@ -331,8 +331,11 @@ class PerspectiveWebSocketClient(object):
             if response_id in self.callbacks:
                 # Call back into the on_update callback
                 ioloop.IOLoop.current().add_callback(self.callbacks[response_id], self)
-        except Exception:
-            logging.critical("Server returned error for %s: %s", self.client_id, message)
+        except Exception as e:
+            if isinstance(message, dict):
+                logging.critical("Server returned error for client id %s, message: %s, error: %s", self.client_id, message, e)
+            else:
+                logging.critical("Server returned error for client id %s, message: ARROW, error: %s", self.client_id, e)
 
     @gen.coroutine
     def get_initial_arrow(self):

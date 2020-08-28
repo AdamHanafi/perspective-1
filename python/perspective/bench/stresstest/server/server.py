@@ -20,8 +20,9 @@ PARSER = argparse.ArgumentParser(description="A perspective-python server config
 PARSER.add_argument(
     "--table_size",
     dest="table_size",
+    default=10000,
     type=int,
-    help="The row size of the initial table. Defaults to 9000 rows.")
+    help="The row size of the initial table. Defaults to 10000 rows.")
 
 PARSER.add_argument(
     "--update_size",
