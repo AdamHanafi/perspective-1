@@ -15,7 +15,7 @@ module.exports = {
         ".js$": "@finos/perspective-test/src/js/transform.js",
         ".html$": "html-loader-jest",
         // Transform typescript for perspective-jupyterlab
-        "^.+\\.ts?$": "ts-jest"
+        ".ts": "ts-jest"
     },
     collectCoverage: true,
     collectCoverageFrom: ["packages/perspective/dist/cjs/**"],
@@ -23,7 +23,7 @@ module.exports = {
     coverageReporters: ["cobertura", "text"],
     // perspective-jupyterlab tests mock `@jupyter-widgets`, which is in
     // Typescript.
-    transformIgnorePatterns: ["/node_modules/(?!(lit-html|@jupyter-widgets)/).+\\.js"],
+    transformIgnorePatterns: ["/node_modules/(?!(lit-html|@jupyter-widgets)/).+$"],
     automock: false,
     setupFiles: ["@finos/perspective-test/src/js/beforeEachSpec.js"],
     reporters: ["default", "@finos/perspective-test/src/js/reporter.js", "jest-junit"],
