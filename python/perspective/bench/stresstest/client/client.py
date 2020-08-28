@@ -292,10 +292,6 @@ class PerspectiveWebSocketClient(object):
                 meta["errored"] = "error" in response
                 meta["receive_timestamp"] = datetime.now()
                 meta["microseconds_on_wire"] = (meta["receive_timestamp"] - meta["send_timestamp"]).microseconds
-
-                if response.get("is_transferable"):
-                    self.pending_on_update_message = meta
-
                 self.pending_messages.pop(response_id)
 
             elif self.test_type == "view" and response.get("cmd") != "init" and response.get("method") != "to_arrow":
@@ -317,11 +313,16 @@ class PerspectiveWebSocketClient(object):
                     # the binary callbacks are from on_update, so we can
                     # automatically increment the internal tracker.
                     self._num_messages_logged += 1
-                
+
                 # time on wire between tornado.write_message and client.read_message
                 if response.get("send_time"):
                     meta["microseconds_on_wire"] = (time.time() * 100000) - response.get("send_time")
                     self.pending_on_update_message = meta
+
+            if response.get("is_transferable"):
+                # on_update/to_arrow always fires with two messages - we need
+                # to time both together.
+                self.pending_on_update_message = meta
 
             if isinstance(meta, dict):
                 # Check telemetry from the server
