@@ -104,9 +104,7 @@ def make_app(table_size, update_size, update_rate):
     def updater():
         TABLE.update(get_data(update_size))
 
-    # Call with jitter - allows for slight variation in when the callback is
-    # actually called on the loop.
-    callback = tornado.ioloop.PeriodicCallback(callback=updater, callback_time=update_rate, jitter=2)
+    callback = tornado.ioloop.PeriodicCallback(callback=updater, callback_time=update_rate)
     callback.start()
 
     return tornado.web.Application([

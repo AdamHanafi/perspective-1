@@ -274,12 +274,16 @@ class PerspectiveWebSocketClient(object):
         message = yield self.client.read_message()
 
         if message is None:
-            raise websocket.WebSocketClosedError("The socket connection has closed!")
+            logging.error("EMPTY MESSAGE FROM `read_message`")
+            return
 
         try:
             response = self.parse_response(message)
             response_id = response.get("id")
-            logging.debug("%s Received id: %s", self.client_id, response_id)
+            if not response_id and response.get("binary"):
+                logging.debug("%s Received binary, bytelength: %d", self.client_id, response.get("byte_length"))
+            else:
+                logging.debug("%s Received id: %s", self.client_id, response_id)
             meta = None
 
             if response_id in self.pending_messages:
@@ -333,9 +337,9 @@ class PerspectiveWebSocketClient(object):
                 ioloop.IOLoop.current().add_callback(self.callbacks[response_id], self)
         except Exception as e:
             if isinstance(message, dict):
-                logging.critical("Server returned error for client id %s, message: %s, error: %s", self.client_id, message, e)
+                logging.critical("Error reading message for client id `%s`, message: %s, error: %s", self.client_id, message, e)
             else:
-                logging.critical("Server returned error for client id %s, message: ARROW, error: %s", self.client_id, e)
+                logging.critical("Error reading message for client id `%s`, message: ARROW, error: %s", self.client_id, e)
 
     @gen.coroutine
     def get_initial_arrow(self):
