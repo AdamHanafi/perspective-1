@@ -38,6 +38,7 @@ export class PerspectiveView extends DOMWidgetView {
             filters: this.model.get("filters"),
             computed_columns: this.model.get("computed_columns"),
             plugin_config: this.model.get("plugin_config"),
+            server: this.model.get("server"),
             client: this.model.get("client"),
             dark:
                 this.model.get("dark") === null // only set if its a bool, otherwise inherit
@@ -263,7 +264,8 @@ export class PerspectiveView extends DOMWidgetView {
 
     /**
      * When traitlets are updated in python, update the corresponding value on
-     * the front-end viewer.
+     * the front-end viewer. `client` and `server` are not included, as they
+     * are not properties in `<perspective-viewer>`.
      */
     plugin_changed(): void {
         this.pWidget.plugin = this.model.get("plugin");

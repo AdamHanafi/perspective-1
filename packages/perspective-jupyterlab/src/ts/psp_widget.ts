@@ -23,6 +23,7 @@ let _increment = 0;
 export interface PerspectiveWidgetOptions extends PerspectiveViewerOptions {
     dark?: boolean;
     client?: boolean;
+    server?: boolean;
     title?: string;
     bindto?: HTMLElement;
     plugin_config?: PerspectiveViewerOptions;
@@ -312,6 +313,18 @@ export class PerspectiveWidget extends Widget {
     }
 
     /**
+     * True if the widget is in server-only mode, i.e. the Python backend has
+     * full ownership of the widget's data, and the widget does not have a
+     * `perspective.Table` of its own.
+     */
+    get server(): boolean {
+        return this._server;
+    }
+    set server(server: boolean) {
+        this._server = server;
+    }
+
+    /**
      * Enable or disable dark mode by re-rendering the viewer.
      */
     get dark(): boolean {
@@ -397,6 +410,7 @@ export class PerspectiveWidget extends Widget {
     private _viewer: HTMLPerspectiveViewerElement;
     private _plugin_config: PerspectiveViewerOptions;
     private _client: boolean;
+    private _server: boolean;
     private _dark: boolean;
     private _editable: boolean;
 }
