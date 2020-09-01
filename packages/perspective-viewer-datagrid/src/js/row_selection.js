@@ -48,6 +48,9 @@ async function getCellConfig({_view, _config}, row_idx, col_idx) {
 export async function selectionListener(regularTable, viewer, event) {
     if (!viewer.hasAttribute("selectable")) return;
     if (event.handled) return;
+    if (event.which !== 1) {
+        return;
+    }
     const meta = regularTable.getMeta(event.target);
     const id = this._ids[meta.y - meta.y0];
     if (meta && meta.y >= 0) {

@@ -14,6 +14,7 @@ import {createViewCache, configureRegularTable} from "regular-table/dist/example
 import MATERIAL_STYLE from "../less/regular_table.less";
 
 import {selectionListener, selectionStyleListener} from "./row_selection.js";
+import {configureEditable} from "./editing.js";
 
 const VIEWER_MAP = new WeakMap();
 const INSTALLED = new WeakMap();
@@ -27,6 +28,7 @@ async function datagridPlugin(regular, viewer, view) {
         regular.addStyleListener(selectionStyleListener.bind(new_model, regular, viewer));
         regular.addEventListener("mousedown", selectionListener.bind(new_model, regular, viewer));
         await regular.draw();
+        await configureEditable.call(new_model, regular, viewer);
         INSTALLED.set(regular, new_model);
     } else {
         await createViewCache(regular, table, view, INSTALLED.get(regular));
@@ -55,7 +57,6 @@ function get_or_create_datagrid(element, div) {
     } else {
         datagrid = VIEWER_MAP.get(div);
         if (!datagrid.isConnected) {
-            //datagrid.clear();
             div.innerHTML = "";
             div.appendChild(document.createElement("slot"));
             element.appendChild(datagrid);
@@ -78,6 +79,8 @@ class DatagridPlugin {
     static async update(div) {
         try {
             const datagrid = VIEWER_MAP.get(div);
+            const model = INSTALLED.get(datagrid);
+            model._num_rows = await model._view.num_rows();
             await datagrid.draw();
         } catch (e) {
             return;
